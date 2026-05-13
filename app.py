@@ -1,24 +1,29 @@
 from flask import Flask, render_template, request, redirect, flash, url_for
 import os
-from google import genai 
+from google import genai
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 
-GEMINI_API_KEY = "AIzaSyDZEWPNqbiSa-vq12W6Bo3oufltD9I1fBg"
+# ⚠️ BEST PRACTICE (but you hardcoded for now)
+GEMINI_API_KEY = "AIzaSyBWa1K0HAFK-vNIv64LlW8mU_P6ZcSMKRM"
+
 client = genai.Client(api_key=GEMINI_API_KEY)
+
 
 def analyze_with_gemini(news_text):
     prompt = f"""
-    You are a professional fact-checker. Analyze the following news content:
-    TEXT: "{news_text}"
-    
-    Determine if this news is REAL or FAKE. 
-    Provide your response in this exact format:
-    LABEL: [REAL or FAKE]
-    CONFIDENCE: [Number 0-100]
-    EXPLANATION: [One sentence explaining why]
-    """
+You are a fact-checker. Determine if this is REAL or FAKE.
+
+TEXT:
+{news_text}
+
+Reply format:
+LABEL: REAL or FAKE
+CONFIDENCE: 0-100
+EXPLANATION: one sentence
+"""
+
     try:
         response = client.models.generate_content(
             model="gemini-2.5-flash",
@@ -26,16 +31,19 @@ def analyze_with_gemini(news_text):
         )
         return response.text
     except Exception as e:
-        print(e)
+        print("Gemini error:", e)
         return None
+
 
 @app.route('/')
 def home():
     return render_template('index.html')
 
+
 @app.route('/check')
 def check():
     return render_template('check.html')
+
 
 @app.route('/result', methods=['POST'])
 def result():
@@ -62,5 +70,8 @@ def result():
 
     return render_template("result.html", label=label, reason=display_text)
 
+
+# ✅ THIS IS REQUIRED FOR LOCAL RUN
 if __name__ == "__main__":
+    print("🔥 Flask starting...")
     app.run(debug=True)
