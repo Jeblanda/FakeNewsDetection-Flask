@@ -6,7 +6,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <!-- NEW: Loading Overlay -->
+
     <div id="loading-overlay">
         <div class="spinner"></div>
         <p class="loading-text">Analyzing Content...</p>
@@ -14,7 +14,7 @@
 
     <div class="container">
         <h1 class="title">Verify News</h1>
-        
+
         {% with messages = get_flashed_messages() %}
           {% if messages %}
             {% for message in messages %}
@@ -23,39 +23,67 @@
           {% endif %}
         {% endwith %}
 
-        <form id="verify-form" action="{{ url_for('result') }}" method="POST" enctype="multipart/form-data">
+        <form id="verify-form" action="{{ url_for('result') }}" method="POST">
+            
             <div class="method-card">
                 <div class="input-group">
                     <label>News Headline</label>
-                    <input type="text" name="title" placeholder="Enter headline here...">
+                    <input type="text" name="title">
                 </div>
+
                 <div class="input-group">
                     <label>Article Content</label>
-                    <textarea name="article" rows="5" placeholder="Paste full news body..."></textarea>
+                    <textarea name="article" rows="5"></textarea>
                 </div>
             </div>
 
             <div class="ui-divider"><span>OR UPLOAD IMAGE</span></div>
 
             <div class="method-card ocr-section">
-                <div class="input-group">
-                    <input type="file" name="file" accept="image/*">
-                </div>
+                <input type="file" id="imageInput" accept="image/*">
+                <p id="ocrStatus"></p>
             </div>
 
             <button type="submit" class="btn-submit">🚀 Run Analysis</button>
         </form>
 
         <div class="footer-nav">
-            <a href="{{ url_for('home') }}" class="back-link">← Back to Home</a>
+            <a href="{{ url_for('home') }}" class="back-link">← Back</a>
         </div>
     </div>
 
+    <!-- OCR LIBRARY -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+
     <script>
-        // Trigger loading screen on form submit
-        document.getElementById('verify-form').addEventListener('submit', function() {
-            document.getElementById('loading-overlay').style.display = 'flex';
+    document.getElementById('verify-form').addEventListener('submit', function() {
+        document.getElementById('loading-overlay').style.display = 'flex';
+    });
+
+    document.getElementById('imageInput').addEventListener('change', function () {
+        const file = this.files[0];
+        const status = document.getElementById('ocrStatus');
+
+        if (!file) return;
+
+        status.innerText = "Reading image...";
+
+        Tesseract.recognize(
+            file,
+            'eng',
+            {
+                logger: m => {
+                    status.innerText = "Processing: " + Math.round(m.progress * 100) + "%";
+                }
+            }
+        ).then(({ data: { text } }) => {
+            status.innerText = "OCR Complete ✅";
+            document.querySelector('textarea[name="article"]').value = text;
+        }).catch(err => {
+            status.innerText = "OCR Failed ❌";
         });
+    });
     </script>
+
 </body>
 </html>
