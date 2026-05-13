@@ -1,24 +1,50 @@
 <!DOCTYPE html>
+
 <html lang="en">
+
 <head>
+
     <meta charset="UTF-8">
-    <title>Result - Fake News Detection</title>
+
+    <title>Result | AI Analysis</title>
+
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
 </head>
+
 <body>
+
     <div class="container">
-        <h1 class="title">Detection Result</h1>
 
-        <div class="result-card {{ 'real' if label == 'REAL' else 'fake' }}">
-            <h2>Prediction: <span class="label">{{ label }}</span></h2>
-            <p class="confidence">Confidence: <strong>{{ confidence }}%</strong></p>
-            <p class="reason">📌 Reason: {{ reason }}</p>
+        <h1 class="title">Analysis Result</h1>
+
+       
+
+        <div class="result-box {{ label.lower() }}">
+
+            <h2 style="font-size: 40px; margin: 10px 0;">{{ label }}</h2>
+
         </div>
 
-        <div class="btn-group">
-            <a href="{{ url_for('check') }}" class="btn-secondary">Check Another News</a>
-            <a href="{{ url_for('home') }}" class="btn-secondary">Back to Home</a>
+
+
+        <div class="reasoning-card">
+
+            <p style="white-space: pre-wrap; text-align: left; line-height: 1.6;">{{ reason }}</p>
+
         </div>
+
+
+
+        <a href="{{ url_for('check') }}" class="btn-submit" style="text-decoration: none; display: block; margin-top: 20px;">
+
+            Check Another
+
+        </a>
+
     </div>
+
 </body>
+
 </html>
+

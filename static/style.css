@@ -1,151 +1,214 @@
-/* 🌐 Global Styles */
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: #f5f8fc;
+/* --- Root Variables --- */
+:root {
+    --primary-color: #1a73e8;
+    --primary-hover: #1557b0;
+    --danger-color: #d32f2f;
+    --success-color: #1e7e34;
+    --bg-gray: #f0f2f5;
+    --card-bg: #ffffff;
+    --text-main: #3c4043;
+    --text-muted: #70757a;
+    --border-color: #dadce0;
+}
+
+/* --- Global Reset --- */
+* {
     margin: 0;
     padding: 0;
-    color: #333;
+    box-sizing: border-box;
 }
 
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-gray);
+    color: var(--text-main);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+/* --- Main Container --- */
 .container {
-    max-width: 800px;
-    margin: 60px auto;
-    padding: 30px;
-    background: white;
-    border-radius: 15px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    background: var(--card-bg);
+    width: 100%;
+    max-width: 600px;
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    position: relative;
 }
 
+/* --- Typography --- */
 .title {
-    text-align: center;
-    color: #1a73e8;
-    font-size: 32px;
+    color: var(--primary-color);
+    font-size: 28px;
     margin-bottom: 10px;
+    font-weight: 700;
 }
 
 .subtitle {
-    text-align: center;
-    font-size: 18px;
-    color: #555;
+    color: var(--text-muted);
+    font-size: 16px;
     margin-bottom: 30px;
 }
 
-.info-card {
-    background-color: #eef4ff;
+/* --- Loading Overlay (Fixed Bug) --- */
+#loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(255, 255, 255, 0.9);
+    display: none; /* JS will change this to 'flex' */
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+    margin-top: 15px;
+    font-weight: 600;
+    color: var(--primary-color);
+    font-size: 18px;
+}
+
+/* --- Form & Cards --- */
+.method-card {
+    background: #f8f9fa;
     padding: 20px;
     border-radius: 10px;
-    margin-bottom: 30px;
-    font-size: 16px;
-    color: #444;
+    margin-bottom: 20px;
+    border: 1px solid var(--border-color);
 }
 
-.btn-primary, .btn-secondary {
-    display: inline-block;
-    padding: 12px 20px;
-    font-size: 16px;
-    text-decoration: none;
-    border-radius: 8px;
-    transition: 0.3s ease;
+.input-group {
+    text-align: left;
+    margin-bottom: 15px;
 }
 
-.btn-primary {
-    background-color: #1a73e8;
+.input-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 5px;
+    font-size: 14px;
+}
+
+input[type="text"], 
+textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 15px;
+}
+
+.ocr-section {
+    border: 2px dashed var(--primary-color);
+    background-color: #f1f8ff;
+}
+
+/* --- UI Elements --- */
+.ui-divider {
+    margin: 25px 0;
+    border-top: 1px solid var(--border-color);
+    position: relative;
+}
+
+.ui-divider span {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--card-bg);
+    padding: 0 10px;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.btn-submit {
+    background-color: var(--primary-color);
     color: white;
     border: none;
-    margin-top: 20px;
-    text-align: center;
+    padding: 16px;
+    border-radius: 8px;
+    width: 100%;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
 }
 
-.btn-primary:hover {
-    background-color: #155cc4;
+.btn-submit:hover {
+    background-color: var(--primary-hover);
 }
 
-.btn-secondary {
-    background-color: #f0f0f0;
-    color: #333;
-    margin-right: 10px;
+.error-flash {
+    background: #fee2e2;
+    color: #b91c1c;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    text-align: left;
+    border-left: 4px solid #ef4444;
 }
 
-.btn-secondary:hover {
-    background-color: #e0e0e0;
+/* --- Result Page Styling --- */
+.result-box {
+    margin: 20px 0;
+    padding: 25px;
+    border-radius: 12px;
+}
+
+.result-box.real {
+    color: var(--success-color);
+    background: #e6f4ea;
+    border: 1px solid #c3e6cb;
+}
+
+.result-box.fake {
+    color: var(--danger-color);
+    background: #fce8e6;
+    border: 1px solid #f5c6cb;
+}
+
+.reasoning-card {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    text-align: left;
+    line-height: 1.6;
 }
 
 .back-link {
-    display: block;
+    display: inline-block;
     margin-top: 20px;
-    color: #1a73e8;
-    text-align: center;
+    color: var(--text-muted);
     text-decoration: none;
+    font-size: 14px;
 }
 
 .back-link:hover {
     text-decoration: underline;
-}
-
-.form-box {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-input[type="text"], textarea {
-    padding: 12px;
-    font-size: 16px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    resize: vertical;
-    background-color: #fdfdfd;
-}
-
-label {
-    font-weight: bold;
-    color: #333;
-}
-
-.flash {
-    background-color: #ffe6e6;
-    border-left: 5px solid red;
-    padding: 10px 15px;
-    margin-bottom: 15px;
-    border-radius: 6px;
-    color: #a94442;
-}
-
-.result-card {
-    padding: 25px;
-    border-radius: 12px;
-    margin-bottom: 20px;
-    text-align: center;
-    font-size: 18px;
-}
-
-.result-card.real {
-    background-color: #e6f4ea;
-    border-left: 6px solid #34a853;
-}
-
-.result-card.fake {
-    background-color: #fce8e6;
-    border-left: 6px solid #ea4335;
-}
-
-.result-card .label {
-    font-size: 26px;
-    font-weight: bold;
-}
-
-.result-card .confidence {
-    margin: 15px 0;
-    font-size: 20px;
-    color: #555;
-}
-
-.result-card .reason {
-    font-style: italic;
-    color: #666;
-}
-
-.btn-group {
-    text-align: center;
-    margin-top: 30px;
+    color: var(--primary-color);
 }

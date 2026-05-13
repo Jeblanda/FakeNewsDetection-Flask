@@ -1,107 +1,112 @@
-from flask import Flask, render_template, request, redirect, flash
-import joblib
+from flask import Flask, render_template, request, redirect, flash, url_for
 import os
-import numpy as np
 import re
-import string
-import nltk
+from PIL import Image
+import pytesseract
+from google import genai 
 
-# Download stopwords (first time only)
-nltk.download('stopwords')
-from nltk.corpus import stopwords
-
-# Flask App Setup
 app = Flask(__name__)
-app.secret_key = 'your_secret_key'  # needed for flash messages
+app.secret_key = 'your_secret_key' 
 
-# -------------------- Load Model & Vectorizer --------------------
-try:
-    model = joblib.load("fake_news_model.pkl")
-    vectorizer = joblib.load("tfidf_vectorizer.pkl")
-except Exception as e:
-    model = None
-    vectorizer = None
-    print("❌ Error loading model or vectorizer:", e)
+# --- Gemini Configuration ---
+# ⚠️ SECURITY: Use os.environ for keys in production!
+GEMINI_API_KEY = "AIzaSyAXwwDlk2vPr8l3n1nQbvuEWFC-wP8VZUQ"
 
-# -------------------- Text Cleaning Function --------------------
-def clean_text(text):
+client = genai.Client(api_key=GEMINI_API_KEY)
+
+# --- Tesseract Path (Windows) ---
+pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+
+# --- Helper Functions ---
+
+def extract_text_from_image(image_file):
     try:
-        text = str(text).lower()
-        text = re.sub(r'https?://\S+|www\.\S+', '', text)
-        text = re.sub(r'<.*?>', '', text)
-        text = re.sub(r'[%s]' % re.escape(string.punctuation), '', text)
-        text = re.sub(r'\n', '', text)
-        text = re.sub(r'\w*\d\w*', '', text)
-        text = " ".join([word for word in text.split() if word not in stopwords.words('english')])
-        return text
+        image = Image.open(image_file)
+        text = pytesseract.image_to_string(image)
+        return text.strip()
     except Exception as e:
-        print("❌ Error in cleaning text:", e)
+        print(f"❌ OCR Error: {e}")
         return ""
 
-# -------------------- Routes --------------------
+def analyze_with_gemini(news_text):
+    """Uses the 2026 stable gemini-2.5-flash model to avoid 429 errors."""
+    prompt = f"""
+    You are a professional fact-checker. Analyze the following news content:
+    TEXT: "{news_text}"
+    
+    Determine if this news is REAL or FAKE. 
+    Provide your response in this exact format:
+    LABEL: [REAL or FAKE]
+    CONFIDENCE: [Number 0-100]
+    EXPLANATION: [One sentence explaining why]
+    """
+    try:
+        # ✅ UPDATED MODEL: Using 2.5-flash which has active quota
+        response = client.models.generate_content(
+            model="gemini-2.5-flash", 
+            contents=prompt
+        )
+        return response.text
+    except Exception as e:
+        # This catches the 429 error and prints a cleaner message
+        if "429" in str(e):
+            print("❌ Quota Error: You hit the rate limit. Wait 60 seconds.")
+        else:
+            print(f"❌ Gemini Error: {e}")
+        return None
 
-# Home Page
+# --- Routes ---
+
 @app.route('/')
 def home():
     return render_template('index.html')
 
-# Check News Page (Form)
-@app.route('/check', methods=['GET', 'POST'])
+@app.route('/check')
 def check():
     return render_template('check.html')
 
-# Result Page (POST)
 @app.route('/result', methods=['POST'])
 def result():
-    # Model check
-    if model is None or vectorizer is None:
-        flash("Model not loaded. Please try again later.")
-        return redirect('/check')
+    news_content = ""
+    
+    # 1. Handle Input (Image or Text)
+    if 'file' in request.files and request.files['file'].filename != '':
+        file = request.files['file']
+        news_content = extract_text_from_image(file)
+        if not news_content:
+            flash("OCR failed to read the image. Please try a clearer text-based image.")
+            return redirect(url_for('check'))
+    else:
+        title = request.form.get("title", "").strip()
+        article = request.form.get("article", "").strip()
+        news_content = f"{title}\n{article}".strip()
 
-    # Get form inputs
-    title = request.form.get("title", "").strip()
-    article = request.form.get("article", "").strip()
-
-    # Empty check
-    if not title and not article:
-        flash("Please enter at least a title or article content.")
-        return redirect('/check')
+    # 2. Minimum Length Check
+    if len(news_content) < 20:
+        flash("Please provide more news content (at least 20 characters) for analysis.")
+        return redirect(url_for('check'))
 
     try:
-        # Combine and clean
-        full_text = title + " " + article
-        cleaned_text = clean_text(full_text)
+        # 3. AI Analysis
+        ai_response = analyze_with_gemini(news_content)
+        
+        if not ai_response:
+            flash("The AI is currently 'out of office' (Rate Limit). Please wait a minute and try again.")
+            return redirect(url_for('check'))
 
-        # After cleaning, check length
-        if len(cleaned_text.split()) < 3:
-            flash("Please enter more meaningful text. Your input is too short.")
-            return redirect('/check')
+        # 4. Parse Results
+        # Simple regex/string check to handle formatting variations
+        label = "REAL" if "LABEL: REAL" in ai_response.upper() else "FAKE"
+        
+        # Cleanup for the UI
+        display_text = ai_response.replace("LABEL:", "Verdict:").replace("CONFIDENCE:", "Confidence:").replace("EXPLANATION:", "Reasoning:")
 
-        # Transform to vector
-        vect_text = vectorizer.transform([cleaned_text])
-
-        # Check if all-zero vector (words not in training vocab)
-        if vect_text.nnz == 0:
-            flash("Input text does not contain meaningful words for analysis.")
-            return redirect('/check')
-
-        # Predict
-        prediction = model.predict(vect_text)[0]
-        prob = model.predict_proba(vect_text)[0]
-        label = "REAL" if prediction == 1 else "FAKE"
-        confidence = round(np.max(prob) * 100, 2)
-
-        # Dynamic reason
-        reason = f"Based on language patterns, the model is {confidence}% confident this news is {label} using TF-IDF features and Logistic Regression."
-
-        # Show result
-        return render_template("result.html", label=label, confidence=confidence, reason=reason)
+        return render_template("result.html", label=label, reason=display_text)
 
     except Exception as e:
-        print("❌ Unexpected error during prediction:", e)
-        flash("Something went wrong while analyzing the news. Please try again.")
-        return redirect('/check')
+        print(f"Error in result route: {e}")
+        flash("An unexpected error occurred.")
+        return redirect(url_for('check'))
 
-# -------------------- Run App --------------------
 if __name__ == "__main__":
     app.run(debug=True)

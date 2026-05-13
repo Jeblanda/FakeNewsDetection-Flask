@@ -2,36 +2,60 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Check News - Fake News Detection</title>
+    <title>Analyze News | Detector</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <div class="container">
-        <h1 class="title">Check News Authenticity</h1>
-        <p class="subtitle">Enter the title and/or full article text below:</p>
+    <!-- NEW: Loading Overlay -->
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <p class="loading-text">Analyzing Content...</p>
+    </div>
 
-        <!-- Flash Messages -->
+    <div class="container">
+        <h1 class="title">Verify News</h1>
+        
         {% with messages = get_flashed_messages() %}
           {% if messages %}
-            <div class="flash">
-              {% for msg in messages %}
-                <p>{{ msg }}</p>
-              {% endfor %}
-            </div>
+            {% for message in messages %}
+              <div class="error-flash">⚠️ {{ message }}</div>
+            {% endfor %}
           {% endif %}
         {% endwith %}
 
-        <form action="{{ url_for('result') }}" method="POST" class="form-box">
-            <label for="title">Title (optional):</label>
-            <input type="text" name="title" id="title" placeholder="Enter news title here...">
+        <form id="verify-form" action="{{ url_for('result') }}" method="POST" enctype="multipart/form-data">
+            <div class="method-card">
+                <div class="input-group">
+                    <label>News Headline</label>
+                    <input type="text" name="title" placeholder="Enter headline here...">
+                </div>
+                <div class="input-group">
+                    <label>Article Content</label>
+                    <textarea name="article" rows="5" placeholder="Paste full news body..."></textarea>
+                </div>
+            </div>
 
-            <label for="article">Full Article:</label>
-            <textarea name="article" id="article" rows="10" placeholder="Paste full article text here..." required></textarea>
+            <div class="ui-divider"><span>OR UPLOAD IMAGE</span></div>
 
-            <button type="submit" class="btn-primary">Analyze News</button>
+            <div class="method-card ocr-section">
+                <div class="input-group">
+                    <input type="file" name="file" accept="image/*">
+                </div>
+            </div>
+
+            <button type="submit" class="btn-submit">🚀 Run Analysis</button>
         </form>
 
-        <a href="{{ url_for('home') }}" class="back-link">← Back to Home</a>
+        <div class="footer-nav">
+            <a href="{{ url_for('home') }}" class="back-link">← Back to Home</a>
+        </div>
     </div>
+
+    <script>
+        // Trigger loading screen on form submit
+        document.getElementById('verify-form').addEventListener('submit', function() {
+            document.getElementById('loading-overlay').style.display = 'flex';
+        });
+    </script>
 </body>
 </html>
