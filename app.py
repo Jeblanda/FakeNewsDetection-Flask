@@ -1,42 +1,38 @@
 from flask import Flask, render_template, request, redirect, flash, url_for
 import os
-from google import genai
+from google import genai # Ensure you use the right library in requirements
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 
-# ✅ MUST BE SET IN VERCEL ENVIRONMENT VARIABLES
-# 'GEMINI_API_KEY' is the NAME of the variable you set in Vercel
+# ✅ CORRECT: We look for the VARIABLE NAME, not the key itself
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
+# Check if key exists
 if not GEMINI_API_KEY:
-    print("❌ Missing GEMINI_API_KEY")
+    print("❌ Missing GEMINI_API_KEY environment variable")
+    # For local testing ONLY, you can fallback: 
+    # GEMINI_API_KEY = "your_actual_key_here"
 
 client = genai.Client(api_key=GEMINI_API_KEY)
 
-
 def analyze_with_gemini(news_text):
-    prompt = f"""
-You are a fact-checker. Determine if this is REAL or FAKE.
-
-TEXT:
-{news_text}
-
-Reply format:
-LABEL: REAL or FAKE
-CONFIDENCE: 0-100
-EXPLANATION: one sentence
-"""
-
+    prompt = f"Fact-check this: {news_text}. Reply with LABEL: REAL/FAKE, CONFIDENCE, and EXPLANATION."
+    
     try:
         response = client.models.generate_content(
-            model="gemini-1.5-flash",
+            model="gemini-1.5-flash", # ✅ Changed from 2.5 to 1.5
             contents=prompt
         )
         return response.text
     except Exception as e:
         print("Gemini error:", e)
         return None
+
+# ... rest of your routes ...
+
+# ✅ For Vercel, the app object needs to be available
+app = app
 
 
 @app.route('/')
