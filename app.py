@@ -5,8 +5,12 @@ from google import genai
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 
-# ⚠️ BEST PRACTICE (but you hardcoded for now)
-GEMINI_API_KEY = "AIzaSyBWa1K0HAFK-vNIv64LlW8mU_P6ZcSMKRM"
+# ✅ MUST BE SET IN VERCEL ENVIRONMENT VARIABLES
+# 'GEMINI_API_KEY' is the NAME of the variable you set in Vercel
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+
+if not GEMINI_API_KEY:
+    print("❌ Missing GEMINI_API_KEY")
 
 client = genai.Client(api_key=GEMINI_API_KEY)
 
@@ -26,7 +30,7 @@ EXPLANATION: one sentence
 
     try:
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-1.5-flash",
             contents=prompt
         )
         return response.text
@@ -64,14 +68,12 @@ def result():
 
     label = "REAL" if "LABEL: REAL" in ai_response.upper() else "FAKE"
 
-    display_text = ai_response.replace("LABEL:", "Verdict:") \
-                              .replace("CONFIDENCE:", "Confidence:") \
-                              .replace("EXPLANATION:", "Reasoning:")
+    return render_template(
+        "result.html",
+        label=label,
+        reason=ai_response
+    )
 
-    return render_template("result.html", label=label, reason=display_text)
 
-
-# ✅ THIS IS REQUIRED FOR LOCAL RUN
-if __name__ == "__main__":
-    print("🔥 Flask starting...")
-    app.run(debug=True)
+# ❌ DO NOT USE app.run() ON VERCEL
+app = app
